@@ -14,6 +14,19 @@ from .keywords import AGE_KEYWORDS, FEMALE_KEYWORDS, MALE_KEYWORDS
 
 _HASHTAG_RE = re.compile(r"#([^\s#、。,.!！?？]+)")
 
+# --- Estimation smoothing (keeps output realistic instead of all-or-nothing) ---
+# Gender: additive (Laplace) smoothing. Each gender starts with this many
+# "pseudo-signals", which pulls extreme ratios toward 50/50 when evidence is
+# thin, and lets strong evidence still dominate. e.g. 15 female / 0 male ->
+# ~85/15 (clearly female) rather than 100/0; 2 female / 0 male -> ~64/36 (weak).
+GENDER_SMOOTHING = 2.5
+
+# Age: each age signal also credits its adjacent bands (a 25-34 audience spills
+# into 18-24 and 35-44), then every band gets a small pseudo-count. Together
+# these spread the distribution across bands instead of putting 100% in one.
+AGE_NEIGHBOR_WEIGHT = 0.35
+AGE_SMOOTHING = 0.4
+
 
 def _find_gender(text: str) -> str | None:
     """Return 'M', 'F', or None for a single signal's text."""
@@ -61,7 +74,9 @@ def estimate_demographics(account: AccountData, max_targets: int = 1000) -> Demo
     signals = _collect_signals(account)[:max_targets]
 
     female = male = 0
-    age_counts: dict[str, int] = {b: 0 for b in AGE_BUCKETS}
+    age_signal_count = 0
+    # Neighbor-bled age weights (float): a signal in bucket i credits i and i±1.
+    age_weight: dict[str, float] = {b: 0.0 for b in AGE_BUCKETS}
     classifiable = 0
 
     for sig in signals:
@@ -72,26 +87,37 @@ def estimate_demographics(account: AccountData, max_targets: int = 1000) -> Demo
         elif gender == "M":
             male += 1
         if age is not None:
-            age_counts[age] += 1
+            age_signal_count += 1
+            i = AGE_BUCKETS.index(age)
+            age_weight[AGE_BUCKETS[i]] += 1.0
+            if i - 1 >= 0:
+                age_weight[AGE_BUCKETS[i - 1]] += AGE_NEIGHBOR_WEIGHT
+            if i + 1 < len(AGE_BUCKETS):
+                age_weight[AGE_BUCKETS[i + 1]] += AGE_NEIGHBOR_WEIGHT
         if gender is not None or age is not None:
             classifiable += 1
 
     analysis_target_count = len(signals)
     unknown_count = analysis_target_count - classifiable
 
-    # Gender ratios (percent). Unknown -> None.
+    # Gender ratios (percent). Laplace-smoothed so thin evidence isn't reported
+    # as 0/100. Unknown (no gender signal at all) -> None.
     male_ratio: float | None = None
     female_ratio: float | None = None
     if female + male > 0:
-        male_ratio = round(male / (female + male) * 100, 1)
-        female_ratio = round(100 - male_ratio, 1)
+        f = female + GENDER_SMOOTHING
+        m = male + GENDER_SMOOTHING
+        female_ratio = round(f / (f + m) * 100, 1)
+        male_ratio = round(100 - female_ratio, 1)
 
-    # Age distribution (percent across buckets). Unknown -> all None.
-    age_total = sum(age_counts.values())
+    # Age distribution (percent). Neighbor-bled + Laplace-smoothed so it spreads
+    # across bands. Unknown (no age signal at all) -> all None.
     age_ratio: dict[str, float | None] = {b: None for b in AGE_BUCKETS}
-    if age_total > 0:
+    if age_signal_count > 0:
+        smoothed = {b: age_weight[b] + AGE_SMOOTHING for b in AGE_BUCKETS}
+        total = sum(smoothed.values())
         for b in AGE_BUCKETS:
-            age_ratio[b] = round(age_counts[b] / age_total * 100, 1)
+            age_ratio[b] = round(smoothed[b] / total * 100, 1)
 
     # Joint age x gender grid = age distribution x gender split.
     grid: dict[str, float | None] = {}
