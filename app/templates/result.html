@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2 style="margin-top:0;">分析結果</h2>
+
+  <div class="summary">
+    <div><div class="num">{{ total }}</div><div class="hint">対象アカウント</div></div>
+    <div><div class="num" style="color:#1e7e34;">{{ success }}</div><div class="hint">成功</div></div>
+    <div><div class="num" style="color:#c0392b;">{{ failed }}</div><div class="hint">エラー</div></div>
+  </div>
+
+  {% if failed == 0 %}
+    <div class="alert" style="background:#e6f4ea;color:#1e7e34;border-color:#bfe3ca;">
+      すべてのアカウントの分析が完了しました。
+    </div>
+  {% else %}
+    <div class="alert">
+      一部のアカウントでエラーが発生しました（Excel内に理由を記載しています）。他のアカウントの分析は完了しています。
+    </div>
+  {% endif %}
+
+  <a class="dl" href="/download/{{ file_id }}">Excelレポートをダウンロード</a>
+
+  <table>
+    <thead><tr><th>アカウント</th><th>フォロワー数</th><th>エンゲージメント率</th><th>ステータス</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.username }}</td>
+        <td>{{ r.followers_count if r.followers_count is not none else "—" }}</td>
+        <td>{{ (r.metrics.engagement_rate ~ "%") if r.metrics.engagement_rate is not none else "—" }}</td>
+        <td>
+          {% if r.status == "成功" %}<span class="badge ok">成功</span>
+          {% else %}<span class="badge err">エラー</span> <span class="hint">{{ r.error_reason }}</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if rejected %}
+    <p class="hint" style="margin-top:14px;">除外された入力: {% for raw, reason in rejected %}{{ raw }}（{{ reason }}）{% if not loop.last %}, {% endif %}{% endfor %}</p>
+  {% endif %}
+
+  <p style="margin-top:20px;"><a class="back" href="/">← 別のアカウントを分析する</a></p>
+</div>
+{% endblock %}

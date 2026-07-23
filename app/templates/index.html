@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2 style="margin-top:0;">アカウント入力</h2>
+  {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+  <form method="post" action="/analyze">
+    <label for="accounts">Instagramアカウント（最大{{ max_accounts }}件・1行1アカウント）</label>
+    <textarea id="accounts" name="accounts" placeholder="yoga_bijo&#10;@another_user&#10;https://www.instagram.com/example">{{ previous or "" }}</textarea>
+    <p class="hint">
+      次の形式に対応：<code>yoga_bijo</code> / <code>@yoga_bijo</code> /
+      <code>https://www.instagram.com/yoga_bijo</code>。カンマ区切りも可。重複は自動除外されます。
+    </p>
+    {% if rejected %}
+      <div class="alert">
+        入力エラー：
+        <ul style="margin:6px 0 0;">
+          {% for raw, reason in rejected %}<li>{{ raw }} — {{ reason }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+    <div style="margin-top:16px;">
+      <button type="submit">分析開始</button>
+    </div>
+    <p class="provider-note">データソース: {{ provider }}{% if provider == "mock" %}（テスト用モックデータ）{% endif %}</p>
+  </form>
+</div>
+{% endblock %}
