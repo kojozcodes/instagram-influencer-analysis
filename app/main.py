@@ -1,19 +1,23 @@
-"""FastAPI application: input screen, analysis execution, result + Excel download."""
+"""FastAPI application: input screen, analysis execution, result + Excel download.
+
+The Excel is delivered inline (base64 data URI in the result page), so there is
+no server-side file storage and the app is fully stateless — it runs identically
+on a normal server and on serverless platforms (Vercel) with no external store.
+"""
 from __future__ import annotations
 
-import uuid
+import base64
 from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from .config import settings
 from .excel import build_excel_bytes
 from .normalize import MAX_ACCOUNTS, normalize_input
 from .pipeline import analyze_accounts
-from .storage import save_report, load_report
 
 app = FastAPI(title="Instagram Influencer Analysis")
 _templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
@@ -60,11 +64,11 @@ def analyze(request: Request, accounts: str = Form("")):
 
     rows = analyze_accounts(norm.accounts)
 
-    # Generate the Excel file and store it for download (backend-agnostic).
-    file_id = uuid.uuid4().hex
+    # Generate the Excel and embed it in the result page as a base64 data URI,
+    # so the download needs no server-side storage (stateless / serverless-safe).
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"influencer_analysis_{stamp}.xlsx"
-    save_report(file_id, build_excel_bytes(rows), filename)
+    xlsx_b64 = base64.b64encode(build_excel_bytes(rows)).decode("ascii")
 
     success = sum(1 for r in rows if r.status == "成功")
     failed = len(rows) - success
@@ -77,25 +81,10 @@ def analyze(request: Request, accounts: str = Form("")):
             "success": success,
             "failed": failed,
             "total": len(rows),
-            "file_id": file_id,
+            "xlsx_b64": xlsx_b64,
+            "download_filename": filename,
             "rejected": norm.rejected,
         },
-    )
-
-
-@app.get("/download/{file_id}")
-def download(file_id: str):
-    # Guard against path traversal: only hex ids are valid.
-    if not file_id or not all(c in "0123456789abcdef" for c in file_id):
-        return HTMLResponse("不正なリクエストです", status_code=400)
-    result = load_report(file_id)
-    if result is None:
-        return HTMLResponse("ファイルが見つかりません（有効期限切れの可能性があります）", status_code=404)
-    data, filename = result
-    return Response(
-        content=data,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

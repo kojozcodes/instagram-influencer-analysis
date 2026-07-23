@@ -19,7 +19,8 @@
     </div>
   {% endif %}
 
-  <a class="dl" href="/download/{{ file_id }}">Excelレポートをダウンロード</a>
+  <a class="dl" download="{{ download_filename }}"
+     href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{{ xlsx_b64 }}">Excelレポートをダウンロード</a>
 
   <table>
     <thead><tr><th>アカウント</th><th>フォロワー数</th><th>エンゲージメント率</th><th>ステータス</th></tr></thead>

@@ -33,7 +33,6 @@ class Settings:
     graph_access_token: str = os.getenv("GRAPH_ACCESS_TOKEN", "")
     recent_posts_limit: int = int(os.getenv("RECENT_POSTS_LIMIT", "30"))
     max_analysis_targets: int = int(os.getenv("MAX_ANALYSIS_TARGETS", "1000"))
-    output_dir: Path = _PROJECT_ROOT / os.getenv("OUTPUT_DIR", "./generated").lstrip("./")
 
     @property
     def project_root(self) -> Path:
@@ -41,10 +40,3 @@ class Settings:
 
 
 settings = Settings()
-# On a normal server this creates the output dir. On read-only/serverless
-# filesystems (e.g. Vercel) it may fail — that's fine, a non-file report store
-# (REPORT_STORE=redis/memory) is used there instead.
-try:
-    settings.output_dir.mkdir(parents=True, exist_ok=True)
-except OSError:
-    pass
