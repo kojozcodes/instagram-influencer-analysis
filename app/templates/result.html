@@ -50,6 +50,8 @@
   .agerow .track i{display:block;height:100%;flex:0 0 auto;min-width:0;padding:0;border:0;border-radius:0;}
   .agerow .track .sf{background:linear-gradient(90deg,#E1306C,#F56040);}
   .agerow .track .sm{background:linear-gradient(90deg,#5B6CF9,#7B2FF7);}
+  /* neutral bar for when the gender split is unknown */
+  .agerow .track .sn{background:linear-gradient(90deg,#9B8FD6,#B9A7DE);}
   .agerow .pct{width:52px;text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
   .tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;margin-left:8px;vertical-align:1px;}
   .tag.meas{background:var(--ok-bg);color:var(--ok);}
@@ -235,6 +237,19 @@
             </div>
           {% endfor %}
         </div>
+      {% elif d.age_ratio %}
+        {# gender split unknown, but the age distribution still stands on its own #}
+        <div style="margin-top:16px;">
+          {% for key, label in buckets %}
+            {% set a = d.age_ratio.get(key) or 0 %}
+            <div class="agerow">
+              <div class="lab">{{ label }}</div>
+              <div class="track"><i class="sn" style="width:{{ a }}%"></i></div>
+              <div class="pct">{{ a }}%</div>
+            </div>
+          {% endfor %}
+        </div>
+        <p class="basis">性別が判定できないため、男女の内訳は表示していません。</p>
       {% else %}
         <div class="bio" style="margin-top:12px;">
           公開情報に年齢を判定できる表現（例：30代・アラサー・ママ・大学生 など）が含まれていないため、年代別は算出できませんでした。

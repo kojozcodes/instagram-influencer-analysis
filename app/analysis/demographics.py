@@ -167,10 +167,17 @@ def demographics_from_counts(counts: dict[tuple[str, str], int]) -> Demographics
 
     female = sum(v for (_, g), v in counts.items() if g == "F")
     female_ratio = round(female / total * 100, 1)
+    age_ratio = {
+        b: round(
+            sum(counts.get((b, c), 0) for c in ("F", "M")) / total * 100, 1
+        )
+        for b in AGE_BUCKETS
+    }
     return DemographicsResult(
         male_ratio=round(100 - female_ratio, 1),
         female_ratio=female_ratio,
         grid=grid,
+        age_ratio=age_ratio,
         analysis_target_count=total,
         classifiable_count=total,
         unknown_count=sum(v for (_, g), v in counts.items() if g == "U"),
@@ -260,6 +267,7 @@ def estimate_demographics(account: AccountData, max_targets: int = 1000) -> Demo
         male_ratio=male_ratio,
         female_ratio=female_ratio,
         grid=grid,
+        age_ratio=age_ratio,
         analysis_target_count=len(signals),
         classifiable_count=classifiable,
         unknown_count=len(signals) - classifiable,

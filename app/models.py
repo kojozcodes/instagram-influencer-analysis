@@ -76,6 +76,9 @@ class DemographicsResult:
     female_ratio: Optional[float] = None    # percent
     # joint age x gender grid, percent of total audience; keys like "male_25-34"
     grid: dict[str, Optional[float]] = field(default_factory=dict)
+    # age distribution on its own, so age can still be shown when the gender
+    # split could not be determined (the grid needs both)
+    age_ratio: dict[str, Optional[float]] = field(default_factory=dict)
     analysis_target_count: int = 0
     classifiable_count: int = 0
     unknown_count: int = 0
