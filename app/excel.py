@@ -61,20 +61,25 @@ _BASE_HEADERS: list[str] = [
     "エラー理由",
 ]
 
-_RELIABILITY_HEADERS = [
+# Always present. Whether a figure is Instagram's official number or our
+# estimate is not a diagnostic — reading one as the other would be a serious
+# misreading, so these are never hidden behind INCLUDE_RELIABILITY.
+_ATTR_SOURCE_HEADERS = [
     "属性データ種別",   # 実測値（Instagram公式） / 推定値
     "推定確度",         # 高 / 中 / 低（実測値のときは「実測」）
     "推定根拠",
-    "分析対象数", "判定可能数", "不明数",
 ]
+
+_RELIABILITY_HEADERS = ["分析対象数", "判定可能数", "不明数"]
 
 
 def _headers() -> list[str]:
+    # inserted right before the プロフィール tail
+    idx = _BASE_HEADERS.index("プロフィール")
+    extra = list(_ATTR_SOURCE_HEADERS)
     if INCLUDE_RELIABILITY:
-        # insert reliability columns right before エラー-related tail (after profile)
-        idx = _BASE_HEADERS.index("プロフィール")
-        return _BASE_HEADERS[:idx] + _RELIABILITY_HEADERS + _BASE_HEADERS[idx:]
-    return list(_BASE_HEADERS)
+        extra += _RELIABILITY_HEADERS
+    return _BASE_HEADERS[:idx] + extra + _BASE_HEADERS[idx:]
 
 
 HEADERS = _headers()
@@ -118,14 +123,14 @@ def _row_values(r: AnalysisRow) -> list:
         _cell(m.reel_avg_views),
         *top[:5],
     ]
+    measured = d.source == "measured"
+    values += [
+        "実測値（Instagram公式）" if measured else "推定値",
+        "実測" if measured else d.confidence,
+        "—" if measured else d.basis,
+    ]
     if INCLUDE_RELIABILITY:
-        measured = d.source == "measured"
-        values += [
-            "実測値（Instagram公式）" if measured else "推定値",
-            "実測" if measured else d.confidence,
-            "—" if measured else d.basis,
-            d.analysis_target_count, d.classifiable_count, d.unknown_count,
-        ]
+        values += [d.analysis_target_count, d.classifiable_count, d.unknown_count]
     values += [r.profile_text, r.status, r.error_reason]
     return values
 

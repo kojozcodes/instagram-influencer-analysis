@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 
 from app.analysis.demographics import demographics_from_counts, estimate_demographics
-from app.models import AGE_BUCKETS, AccountData
+from app.models import AGE_BUCKETS, AccountData, AnalysisRow
 
 # Bios as published by the accounts (both are repost/curation accounts).
 YOGA_BIO = (
@@ -122,3 +122,25 @@ def test_measured_demographics_are_marked_and_exclude_undeclared():
 def test_estimates_are_never_labelled_measured():
     account = AccountData(username="someone", biography="ヨガ講師です")
     assert estimate_demographics(account).source == "estimated"
+
+
+def test_excel_always_states_whether_figures_are_measured_or_estimated():
+    """Reading an estimate as Instagram's official number would be a serious
+    misreading, so this column must never depend on INCLUDE_RELIABILITY."""
+    from app import excel
+
+    assert "属性データ種別" in excel.HEADERS
+    assert "推定確度" in excel.HEADERS
+
+    row = AnalysisRow(username="x", status="成功")
+    row.demographics = estimate_demographics(
+        AccountData(username="x", biography=YOGA_BIO)
+    )
+    values = excel._row_values(row)
+    assert len(values) == len(excel.HEADERS), "row width must match header width"
+    assert values[excel.HEADERS.index("属性データ種別")] == "推定値"
+
+    row.demographics = demographics_from_counts({("25-34", "F"): 10})
+    values = excel._row_values(row)
+    assert values[excel.HEADERS.index("属性データ種別")] == "実測値（Instagram公式）"
+    assert values[excel.HEADERS.index("推定確度")] == "実測"
