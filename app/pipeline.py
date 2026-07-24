@@ -1,11 +1,28 @@
 """Analysis orchestration (spec F2): analyze accounts, isolate per-account errors."""
 from __future__ import annotations
 
-from .analysis.demographics import estimate_demographics
+from .analysis.demographics import demographics_from_counts, estimate_demographics
 from .analysis.metrics import calculate_metrics
 from .config import settings
 from .models import AccountError, AnalysisRow
 from .providers import get_provider
+
+
+def _demographics_for(account, username: str, provider):
+    """Exact demographics if Instagram will give them to us, else an estimate.
+
+    Only accounts connected to our app expose follower_demographics; a provider
+    without the method (mock) or a failed lookup falls back to estimation.
+    """
+    getter = getattr(provider, "fetch_measured_demographics", None)
+    if getter is not None:
+        try:
+            counts = getter(username)
+        except Exception:
+            counts = None
+        if counts:
+            return demographics_from_counts(counts)
+    return estimate_demographics(account, settings.max_analysis_targets)
 
 
 def analyze_account(username: str, provider=None) -> AnalysisRow:
@@ -21,7 +38,9 @@ def analyze_account(username: str, provider=None) -> AnalysisRow:
         row.account_url = account.account_url or row.account_url
         row.followers_count = account.followers_count
         row.profile_text = account.biography
-        row.demographics = estimate_demographics(account, settings.max_analysis_targets)
+        # Prefer Instagram's own figures when the account is connected to our
+        # app — those are exact. Everything else can only be estimated.
+        row.demographics = _demographics_for(account, username, provider)
         row.metrics = calculate_metrics(account)
         row.status = "成功"
     except AccountError as exc:

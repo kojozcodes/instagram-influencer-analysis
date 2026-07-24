@@ -43,7 +43,9 @@ class AccountError(Exception):
 
 # --- Analysis result structures ---
 
-AGE_BUCKETS = ["13-17", "18-24", "25-34", "35-44", "45-64"]
+# Matches Instagram Insights' own age bands exactly, so estimates can be compared
+# to the official figures side by side (the client validates against Insights).
+AGE_BUCKETS = ["13-17", "18-24", "25-34", "35-44", "45-54", "55-64", "65+"]
 
 
 @dataclass
@@ -77,6 +79,15 @@ class DemographicsResult:
     analysis_target_count: int = 0
     classifiable_count: int = 0
     unknown_count: int = 0
+    # "measured" = Instagram's official follower_demographics (exact, only
+    # available for accounts connected to our app); "estimated" = inferred from
+    # public text. Shown in the UI/Excel so the two are never confused.
+    source: str = "estimated"
+    # 高 / 中 / 低 — how much evidence the estimate rests on. Meaningless when
+    # source == "measured" (official data is exact), where it is always "実測".
+    confidence: str = "低"
+    # short human-readable note on what drove the estimate (topic, archetype)
+    basis: str = ""
 
 
 @dataclass

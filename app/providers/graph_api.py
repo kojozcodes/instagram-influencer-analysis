@@ -51,6 +51,62 @@ class GraphAPIProvider:
             int(usage.get("total_time", 0) or 0),
         )
 
+    def fetch_measured_demographics(self, username: str) -> dict | None:
+        """Instagram's OWN follower demographics — exact, not estimated.
+
+        Only available for the account our token authenticates. Meta does not
+        expose it through business_discovery at all (asking for
+        `follower_demographics` or `audience_gender_age` on another account
+        returns "nonexisting field"), so third-party accounts always fall back
+        to estimation. Returns None whenever the exact data isn't available.
+        """
+        if username.lower().lstrip("@") != self._own_username().lower():
+            return None
+        try:
+            resp = httpx.get(
+                f"{self._url}/insights",
+                params={
+                    "metric": "follower_demographics",
+                    "period": "lifetime",
+                    "timeframe": "this_month",
+                    "breakdown": "age,gender",
+                    "metric_type": "total_value",
+                    "access_token": settings.graph_access_token,
+                },
+                timeout=30.0,
+            )
+            self._record_usage(resp)
+            if resp.status_code != 200:
+                return None
+            results = (
+                resp.json()["data"][0]["total_value"]["breakdowns"][0]["results"]
+            )
+        except (httpx.HTTPError, KeyError, IndexError, ValueError):
+            return None
+
+        # results look like {"dimension_values": ["25-34", "F"], "value": 9}
+        counts: dict[tuple[str, str], int] = {}
+        for r in results:
+            try:
+                age, gender = r["dimension_values"]
+            except (KeyError, ValueError):
+                continue
+            counts[(age, gender)] = int(r.get("value", 0) or 0)
+        return counts or None
+
+    def _own_username(self) -> str:
+        if getattr(self, "_own_username_cache", None) is None:
+            try:
+                resp = httpx.get(
+                    self._url,
+                    params={"fields": "username", "access_token": settings.graph_access_token},
+                    timeout=30.0,
+                )
+                self._own_username_cache = resp.json().get("username", "") or ""
+            except (httpx.HTTPError, ValueError):
+                self._own_username_cache = ""
+        return self._own_username_cache
+
     def _media_fields(self) -> str:
         limit = settings.recent_posts_limit
         return (

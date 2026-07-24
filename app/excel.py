@@ -31,12 +31,16 @@ _BASE_HEADERS: list[str] = [
     "18-24歳男性割合（推定）",
     "25-34歳男性割合（推定）",
     "35-44歳男性割合（推定）",
-    "45-64歳男性割合（推定）",
+    "45-54歳男性割合（推定）",
+    "55-64歳男性割合（推定）",
+    "65歳以上男性割合（推定）",
     "13-17歳女性割合（推定）",
     "18-24歳女性割合（推定）",
     "25-34歳女性割合（推定）",
     "35-44歳女性割合（推定）",
-    "45-64歳女性割合（推定）",
+    "45-54歳女性割合（推定）",
+    "55-64歳女性割合（推定）",
+    "65歳以上女性割合（推定）",
     "直近30投稿の平均いいね数",
     "直近30投稿の平均コメント数",
     "平均リール再生数",
@@ -57,7 +61,12 @@ _BASE_HEADERS: list[str] = [
     "エラー理由",
 ]
 
-_RELIABILITY_HEADERS = ["分析対象数", "判定可能数", "不明数"]
+_RELIABILITY_HEADERS = [
+    "属性データ種別",   # 実測値（Instagram公式） / 推定値
+    "推定確度",         # 高 / 中 / 低（実測値のときは「実測」）
+    "推定根拠",
+    "分析対象数", "判定可能数", "不明数",
+]
 
 
 def _headers() -> list[str]:
@@ -110,7 +119,13 @@ def _row_values(r: AnalysisRow) -> list:
         *top[:5],
     ]
     if INCLUDE_RELIABILITY:
-        values += [d.analysis_target_count, d.classifiable_count, d.unknown_count]
+        measured = d.source == "measured"
+        values += [
+            "実測値（Instagram公式）" if measured else "推定値",
+            "実測" if measured else d.confidence,
+            "—" if measured else d.basis,
+            d.analysis_target_count, d.classifiable_count, d.unknown_count,
+        ]
     values += [r.profile_text, r.status, r.error_reason]
     return values
 

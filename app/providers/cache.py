@@ -45,6 +45,25 @@ class CachingProvider:
         self._lock = threading.Lock()
         self.hits = 0
         self.misses = 0
+        self._demo_cache: dict[str, dict | None] = {}
+
+    def fetch_measured_demographics(self, username: str):
+        """Pass through to the inner provider, cached for the process lifetime.
+
+        Returns None when the inner provider has no such capability (mock), so
+        callers fall back to estimation.
+        """
+        getter = getattr(self._inner, "fetch_measured_demographics", None)
+        if getter is None:
+            return None
+        key = username.lower().lstrip("@")
+        with self._lock:
+            if key in self._demo_cache:
+                return self._demo_cache[key]
+        result = getter(username)
+        with self._lock:
+            self._demo_cache[key] = result
+        return result
 
     # -- usage tracking -------------------------------------------------
     @property
