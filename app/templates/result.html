@@ -34,19 +34,22 @@
   .m .v small{font-size:12px;font-weight:700;color:var(--muted);}
   .dim{color:#BDBDCC;font-weight:600;}
 
+  /* NOTE: segments use .sf/.sm, not .f/.m — `.m` is the metric-tile class above
+     and its padding/border would give every segment a ~28px minimum width. */
   .gbar{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
-  .gbar span{display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:#fff;white-space:nowrap;}
-  .gbar .f{background:linear-gradient(90deg,#E1306C,#F56040);}
-  .gbar .m{background:linear-gradient(90deg,#5B6CF9,#7B2FF7);}
+  .gbar span{display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;
+             color:#fff;white-space:nowrap;flex:0 0 auto;min-width:0;overflow:hidden;}
+  .gbar .sf{background:linear-gradient(90deg,#E1306C,#F56040);}
+  .gbar .sm{background:linear-gradient(90deg,#5B6CF9,#7B2FF7);}
   .glegend{display:flex;gap:16px;margin-top:8px;font-size:12px;color:var(--muted);}
   .glegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px;}
 
   .agerow{display:flex;align-items:center;gap:11px;margin-bottom:7px;}
   .agerow .lab{width:66px;font-size:12px;color:var(--ink-2);font-weight:700;flex:0 0 auto;}
   .agerow .track{flex:1;height:16px;background:#F1F0F8;border-radius:6px;overflow:hidden;display:flex;}
-  .agerow .track i{display:block;height:100%;}
-  .agerow .track .f{background:linear-gradient(90deg,#E1306C,#F56040);}
-  .agerow .track .m{background:linear-gradient(90deg,#5B6CF9,#7B2FF7);}
+  .agerow .track i{display:block;height:100%;flex:0 0 auto;min-width:0;padding:0;border:0;border-radius:0;}
+  .agerow .track .sf{background:linear-gradient(90deg,#E1306C,#F56040);}
+  .agerow .track .sm{background:linear-gradient(90deg,#5B6CF9,#7B2FF7);}
   .agerow .pct{width:52px;text-align:right;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
 
   .posts{display:flex;flex-wrap:wrap;gap:8px;}
@@ -190,8 +193,9 @@
 
       {% if d.female_ratio is not none %}
         <div class="gbar">
-          {% if d.female_ratio > 0 %}<span class="f" style="width:{{ d.female_ratio }}%">女性 {{ d.female_ratio }}%</span>{% endif %}
-          {% if d.male_ratio > 0 %}<span class="m" style="width:{{ d.male_ratio }}%">男性 {{ d.male_ratio }}%</span>{% endif %}
+          {# label only where the segment is wide enough to hold it; the legend below always shows both #}
+          {% if d.female_ratio > 0 %}<span class="sf" style="width:{{ d.female_ratio }}%">{% if d.female_ratio >= 14 %}女性 {{ d.female_ratio }}%{% endif %}</span>{% endif %}
+          {% if d.male_ratio > 0 %}<span class="sm" style="width:{{ d.male_ratio }}%">{% if d.male_ratio >= 14 %}男性 {{ d.male_ratio }}%{% endif %}</span>{% endif %}
         </div>
         <div class="glegend">
           <span><i style="background:#E1306C"></i>女性 {{ d.female_ratio }}%</span>
@@ -209,7 +213,7 @@
             <div class="agerow">
               <div class="lab">{{ label }}</div>
               <div class="track">
-                <i class="f" style="width:{{ f }}%"></i><i class="m" style="width:{{ mm }}%"></i>
+                <i class="sf" style="width:{{ f }}%"></i><i class="sm" style="width:{{ mm }}%"></i>
               </div>
               <div class="pct">{{ (f + mm) | round(1) }}%</div>
             </div>
