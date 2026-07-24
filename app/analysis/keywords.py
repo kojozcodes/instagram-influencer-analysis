@@ -46,13 +46,21 @@ AGE_KEYWORDS: dict[str, list[str]] = {
     "25-34": [
         "アラサー", "30代", "20代後半", "社会人", "20代", "働く女性", "os",
         "around 30", "30s", "twenties", "late 20s",
+        # Parenting terms are strong age indicators (parents of young children
+        # are typically late-20s to 30s) — important because mama-influencers
+        # are a core segment for this client.
+        "ママ", "まま", "育児", "子育て", "新米ママ", "プレママ", "マタニティ",
+        "妊娠", "産後", "赤ちゃん", "ベビー", "保育園", "離乳食",
+        "新社会人", "ol", "mama", "mom", "maternity", "baby",
     ],
     "35-44": [
         "アラフォー", "40代", "30代後半", "ワーママ", "働くママ",
         "around 40", "40s", "late 30s",
+        # Parents of school-age children skew later.
+        "小学生", "幼稚園", "入学", "習い事", "受験ママ", "主婦",
     ],
     "45-64": [
         "50代", "アラフィフ", "シニア", "60代", "熟年", "セカンドライフ",
-        "50s", "60s", "senior", "midlife",
+        "50s", "60s", "senior", "midlife", "還暦", "定年", "孫",
     ],
 }
