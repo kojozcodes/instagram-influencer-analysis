@@ -84,6 +84,10 @@ def analyze(request: Request, accounts: str = Form("")):
             "xlsx_b64": xlsx_b64,
             "download_filename": filename,
             "rejected": norm.rejected,
+            # the results page also renders the input form (same screen)
+            "max_accounts": MAX_ACCOUNTS,
+            "provider": settings.provider,
+            "previous": accounts,
         },
     )
 
