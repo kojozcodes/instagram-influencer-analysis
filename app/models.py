@@ -76,6 +76,13 @@ class DemographicsResult:
     female_ratio: Optional[float] = None    # percent
     # joint age x gender grid, percent of total audience; keys like "male_25-34"
     grid: dict[str, Optional[float]] = field(default_factory=dict)
+    # marginal age distribution. Kept separately from `grid` because the grid is
+    # the product of age x gender and therefore collapses to all-None whenever
+    # gender is unknown — which would silently discard age we did determine.
+    age_ratio: dict[str, Optional[float]] = field(default_factory=dict)
+    # True only when the account's own text actually carried age wording. False
+    # means age_ratio is a generic assumption, not a reading of this account.
+    age_measured_from_text: bool = False
     # age distribution on its own, so age can still be shown when the gender
     # split could not be determined (the grid needs both)
     age_ratio: dict[str, Optional[float]] = field(default_factory=dict)

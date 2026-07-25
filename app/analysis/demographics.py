@@ -64,7 +64,7 @@ AGE_PRIOR: dict[str, float] = {
 }
 # Weight of that prior in pseudo-counts. Low enough that a dozen explicit age
 # keywords can move the distribution, high enough that one stray word cannot.
-AGE_PRIOR_STRENGTH = 0.28
+AGE_PRIOR_STRENGTH = 0.08
 AGE_NEIGHBOR_WEIGHT = 0.35
 
 
@@ -178,6 +178,7 @@ def demographics_from_counts(counts: dict[tuple[str, str], int]) -> Demographics
         female_ratio=female_ratio,
         grid=grid,
         age_ratio=age_ratio,
+        age_measured_from_text=True,  # official figures, not a generic assumption
         analysis_target_count=total,
         classifiable_count=total,
         unknown_count=sum(v for (_, g), v in counts.items() if g == "U"),
@@ -261,13 +262,16 @@ def estimate_demographics(account: AccountData, max_targets: int = 1000) -> Demo
     else:
         confidence = "低"
     if age_signal_count == 0:
-        basis_parts.append("年代は年齢表現が無く一般的な分布を使用")
+        basis_parts.append(
+            "年代：このアカウント固有の年齢情報は検出されず、全体傾向値を表示"
+        )
 
     return DemographicsResult(
         male_ratio=male_ratio,
         female_ratio=female_ratio,
         grid=grid,
         age_ratio=age_ratio,
+        age_measured_from_text=age_signal_count > 0,
         analysis_target_count=len(signals),
         classifiable_count=classifiable,
         unknown_count=len(signals) - classifiable,

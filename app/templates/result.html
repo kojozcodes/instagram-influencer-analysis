@@ -59,6 +59,12 @@
   .tag.c-mid{background:#FFF4E5;color:#B4700A;}
   .tag.c-lo{background:#F3F1F7;color:#7C7C8F;}
   .basis{margin:-4px 0 12px;font-size:12px;color:var(--muted);line-height:1.7;}
+  .agerow .track .sn{background:linear-gradient(90deg,#9AA0B5,#C3C7D6);}
+  .age-generic{display:flex;gap:8px;align-items:flex-start;margin:16px 0 4px;padding:10px 12px;
+               background:#FFF8E8;border:1px solid #F3E2B8;border-radius:10px;
+               font-size:12px;color:#7A5A08;line-height:1.75;}
+  .age-generic svg{width:15px;height:15px;stroke:#B4700A;flex:0 0 auto;margin-top:4px;}
+  .age-generic b{color:#5E4506;}
   .note-ok{display:flex;align-items:center;gap:8px;margin:0 0 18px;font-size:14px;color:var(--ok);font-weight:700;}
   .note-ok svg{width:18px;height:18px;stroke:var(--ok);flex:0 0 auto;}
 
@@ -221,6 +227,19 @@
         </div>
       {% else %}
         <div class="bio">公開情報に性別を判定できる情報が含まれていないため、算出できませんでした。</div>
+      {% endif %}
+
+      {# Age is only a reading of THIS account when its text carried age wording.
+         Otherwise it is a shared reference distribution and must say so plainly —
+         the numbers are identical for every such account. #}
+      {% if d.source != 'measured' and d.age_ratio and not d.age_measured_from_text %}
+        <p class="age-generic">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" />
+          </svg>
+          <span>年代：このアカウントからは年齢を判定できる情報が得られませんでした。
+          以下は<b>全体傾向の参考値</b>で、同条件のアカウントでは同じ値になります。</span>
+        </p>
       {% endif %}
 
       {% if d.grid.get('female_25-34') is not none %}
