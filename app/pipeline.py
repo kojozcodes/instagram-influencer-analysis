@@ -1,6 +1,8 @@
 """Analysis orchestration (spec F2): analyze accounts, isolate per-account errors."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+
 from .analysis.demographics import demographics_from_counts, estimate_demographics
 from .analysis.metrics import calculate_metrics
 from .config import settings
@@ -52,6 +54,19 @@ def analyze_account(username: str, provider=None) -> AnalysisRow:
     return row
 
 
+# Each account costs ~3s (profile + 30 media), so 20 sequential accounts would
+# run ~60s and risk hitting the serverless execution limit. Fetches are network
+# -bound and the provider's cache is lock-guarded, so they overlap safely. The
+# cap keeps us from opening 20 simultaneous connections to Meta.
+MAX_CONCURRENT_FETCHES = 5
+
+
 def analyze_accounts(usernames: list[str]) -> list[AnalysisRow]:
     provider = get_provider()
-    return [analyze_account(u, provider) for u in usernames]
+    if len(usernames) <= 1:
+        return [analyze_account(u, provider) for u in usernames]
+
+    workers = min(MAX_CONCURRENT_FETCHES, len(usernames))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        # map preserves input order, which the Excel and the UI both rely on
+        return list(pool.map(lambda u: analyze_account(u, provider), usernames))
