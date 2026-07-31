@@ -77,6 +77,34 @@ def test_gender_direction_is_correct(username):
     )
 
 
+def test_age_pattern_is_selected_by_genre():
+    """Approved item 1: the age baseline is chosen per genre, not global."""
+    from app.analysis.demographics import estimate_demographics as est
+    from app.analysis.keywords import AGE_PATTERNS
+
+    yoga = est(AccountData(username="yoga_bijo", display_name="YOGA美女",
+                           biography=YOGA_BIO))
+    surf = est(AccountData(username="surf_bijo", display_name="サーフ_bijo",
+                           biography=SURF_BIO))
+    # different genres must now draw different baselines
+    assert "中年層型" in yoga.basis
+    assert "趣味型" in surf.basis
+    assert yoga.age_ratio != surf.age_ratio
+    assert set(AGE_PATTERNS) == {"若年層型", "中年層型", "趣味型", "全年代型"}
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "KNOWN GAP, reported to the client 2026-07-30. The four approved age "
+        "patterns are built for personal influencer accounts. Both ground-truth "
+        "accounts are 'showcase' curation accounts, whose audiences run far "
+        "older (83.6%/86.3% aged 35+ against 38%/66% predicted). A fifth "
+        "showcase pattern would close this, but that is a specification change "
+        "and is awaiting approval — see proposed item 8. Do NOT silence this by "
+        "loosening the tolerance."
+    ),
+)
 @pytest.mark.parametrize("username", sorted(GROUND_TRUTH))
 def test_age_distribution_is_in_range(username):
     truth = GROUND_TRUTH[username]
