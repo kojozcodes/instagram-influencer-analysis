@@ -39,8 +39,13 @@ TOPIC_AUDIENCE: list[tuple[str, list[str], float]] = [
     # --- the seven genres supplied by the client ---------------------------
     ("ビジネス・副業・マネー", ["副業", "投資", "つみたてnisa", "資産形成", "マネー",
                        "ポイ活", "節約"], 0.40),
-    ("暮らし・インテリア", ["インテリア", "部屋作り", "一人暮らし", "マイホーム", "収納",
-                    "100均", "無印良品", "暮らし"], 0.85),
+    # 暮らす / 住まい / 家づくり added after verification: a bio reading
+    # 「心地よく暮らす」 matched nothing, fell through to the captions, and was
+    # classified 整体・治療・健康 on one incidental word (59.2% vs 84.6% actual).
+    ("暮らし・インテリア", ["インテリア", "部屋作り", "一人暮らし", "ひとり暮らし",
+                    "マイホーム", "収納", "100均", "無印良品", "暮らし", "暮らす",
+                    "住まい", "家づくり", "間取り", "リノベ", "ルームツアー",
+                    "賃貸", "diy", "模様替え"], 0.85),
     ("ペット・動物", ["いぬすたぐらむ", "ねこすたぐらむ", "愛犬", "愛猫", "ペット",
                  "保護猫", "保護犬"], 0.70),
     ("料理・レシピ", ["料理", "レシピ", "おうちごはん", "時短レシピ", "お弁当",
@@ -140,6 +145,14 @@ MALE_KEYWORDS: list[str] = [
 # 育児 / 子育て now appear in fathers' profiles too, so a パパ term suppresses the
 # female reading rather than both firing at once (client's own note).
 MALE_FIRST_MARKERS: list[str] = ["パパ", "ぱぱ", "新米パパ", "育児パパ", "プレパパ"]
+
+# Compound words that CONTAIN a gender character but are themselves neutral.
+# They are blanked before gender scoring, otherwise 夫婦 ("married couple")
+# registers as 夫 ("husband") — which read a mother's 「共働き夫婦」 as a male
+# creator and cost 13 points on one verification account.
+NEUTRAL_COMPOUNDS: list[str] = [
+    "夫婦", "ご夫婦", "夫妻", "男女", "父母", "祖父母", "両親", "子供", "子ども",
+]
 
 # --- Japanese given-name characters (approved item 3, アカウント名 axis) -----
 # Separates two accounts in the same genre when the wording does not:

@@ -58,6 +58,7 @@ from .keywords import (
     GENRE_AGE_PATTERN,
     MALE_FIRST_MARKERS,
     MALE_KEYWORDS,
+    NEUTRAL_COMPOUNDS,
     MALE_SUBJECT_MARKERS,
     NAME_FEMALE_CHARS,
     NAME_MALE_CHARS,
@@ -101,6 +102,9 @@ def _logit(p: float) -> float:
 def _signed_score(text: str) -> float:
     """Smoothed signed proportion in [-1, 1]; +1 means purely female wording."""
     t = (text or "").lower()
+    # Blank neutral compounds first, so 夫婦 does not read as 夫.
+    for c in NEUTRAL_COMPOUNDS:
+        t = t.replace(c, "　")
     f = sum(1 for k in FEMALE_KEYWORDS if k in t)
     m = sum(1 for k in MALE_KEYWORDS if k in t)
     if any(k in t for k in MALE_FIRST_MARKERS):
