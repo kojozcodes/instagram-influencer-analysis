@@ -47,7 +47,14 @@
     .header-inner h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.01em;flex:1;}
     .header-inner .right svg{width:26px;height:26px;stroke:rgba(255,255,255,.9);display:block;}
 
-    main{max-width:1180px;margin:38px auto 44px;padding:0 26px;position:relative;z-index:1;}
+    .tabs{background:var(--surface);border-bottom:1px solid var(--line);position:relative;z-index:2;}
+    .tabs-inner{max-width:1180px;margin:0 auto;padding:0 26px;display:flex;gap:6px;}
+    .tab{display:inline-block;padding:13px 26px;font-size:14px;font-weight:700;
+         border-bottom:3px solid transparent;color:var(--muted);}
+    .tab.is-active{color:var(--accent);border-bottom-color:var(--accent);}
+    .tab.is-disabled{color:#C2C2D0;cursor:not-allowed;}
+
+    main{max-width:1180px;margin:30px auto 44px;padding:0 26px;position:relative;z-index:1;}
 
     .card{
       background:var(--surface);border-radius:22px;box-shadow:var(--shadow);
@@ -140,14 +147,18 @@
         </svg>
       </span>
       <h1>Instagramインフルエンサー分析システム</h1>
-      <span class="right">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3v18h18" /><path d="M20 18v3" /><path d="M16 16v5" /><path d="M12 13v8" /><path d="M8 16v5" />
-          <path d="M3 11l6 -6l4 4l7 -7" />
-        </svg>
-      </span>
+      {# 修正依頼02 slide 4: header chart icon removed #}
     </div>
   </header>
+
+  {# 修正依頼02: platform tabs. Instagram is active; TikTok is shown as a
+     planned addition and is deliberately not clickable in this release. #}
+  <nav class="tabs" aria-label="プラットフォーム">
+    <div class="tabs-inner">
+      <span class="tab is-active" aria-current="page">Instagram</span>
+      <span class="tab is-disabled" aria-disabled="true" title="今後追加予定">TikTok</span>
+    </div>
+  </nav>
 
   <main>{% block content %}{% endblock %}</main>
   <footer>※ 男女比・年代比は公開情報に基づく推定値です（Instagram公式インサイト値ではありません）。リール再生数は取得可能な範囲で出力します。</footer>

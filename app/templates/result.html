@@ -84,8 +84,8 @@
 </style>
 {% endblock %}
 
-{% macro val(x, suffix='') %}{% if x is not none %}{{ x }}{{ suffix }}{% else %}<span class="dim">—</span>{% endif %}{% endmacro %}
-{% macro num(x, suffix='') %}{% if x is not none %}{{ "{:,}".format(x) }}{{ suffix }}{% else %}<span class="dim">—</span>{% endif %}{% endmacro %}
+{% macro val(x, suffix='') %}{% if x is not none %}{{ x }}{{ suffix }}{% else %}<span class="dim">-</span>{% endif %}{% endmacro %}
+{% macro num(x, suffix='') %}{% if x is not none %}{{ "{:,}".format(x) }}{{ suffix }}{% else %}<span class="dim">-</span>{% endif %}{% endmacro %}
 
 {% block content %}
 {% include "_form.html" %}
@@ -213,7 +213,7 @@
           <span class="tag c-{{ {'高':'hi','中':'mid','低':'lo'}[d.confidence] }}">確度 {{ d.confidence }}</span>
         {% endif %}
       </div>
-      {% if d.source != 'measured' and d.basis %}<p class="basis">{{ d.basis }}</p>{% endif %}
+      {# 修正依頼02: per-account explanation line removed at client request #}
 
       {% if d.female_ratio is not none %}
         <div class="gbar">
@@ -229,18 +229,7 @@
         <div class="bio">公開情報に性別を判定できる情報が含まれていないため、算出できませんでした。</div>
       {% endif %}
 
-      {# Age is only a reading of THIS account when its text carried age wording.
-         Otherwise it is a shared reference distribution and must say so plainly —
-         the numbers are identical for every such account. #}
-      {% if d.source != 'measured' and d.age_ratio and not d.age_measured_from_text %}
-        <p class="age-generic">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" />
-          </svg>
-          <span>年代：このアカウントからは年齢を判定できる情報が得られませんでした。
-          以下は<b>全体傾向の参考値</b>で、同条件のアカウントでは同じ値になります。</span>
-        </p>
-      {% endif %}
+      {# 修正依頼02: generic-age notice removed at client request #}
 
       {% if d.grid.get('female_25-34') is not none %}
         <div style="margin-top:16px;">

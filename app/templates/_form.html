@@ -33,12 +33,8 @@
   {% endif %}
 
   <form method="post" action="/analyze" id="analyze-form">
-    <label for="accounts">Instagramアカウント（最大{{ max_accounts }}件・1行1アカウント）
-      <svg class="q" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 16v.01" />
-        <path d="M12 13a2 2 0 0 0 .914 -3.782a1.98 1.98 0 0 0 -2.414 .483" />
-      </svg>
-    </label>
+    {# 修正依頼02: label text, brackets and the help icon removed; left-aligned #}
+    <label for="accounts">最大{{ max_accounts }}件・1行1アカウント</label>
     <textarea id="accounts" name="accounts"
       placeholder="yoga_bijo&#10;@another_user&#10;https://www.instagram.com/example">{{ previous or "" }}</textarea>
 
@@ -47,7 +43,8 @@
         <path d="M3 12h1m8 -9v1m8 8h1m-15.4 -6.4l.7 .7m12.1 -.7l-.7 .7" />
         <path d="M9 16a5 5 0 1 1 6 0a3.5 3.5 0 0 0 -1 3a2 2 0 0 1 -4 0a3.5 3.5 0 0 0 -1 -3" /><path d="M9.7 17h4.6" />
       </svg>
-      <span>次の形式に対応：yoga_bijo / @yoga_bijo / https://www.instagram.com/yoga_bijo。カンマ区切りも可。<br>
+      {# 修正依頼02: the 。 after yoga_bijo removed #}
+      <span>次の形式に対応：yoga_bijo / @yoga_bijo / https://www.instagram.com/yoga_bijo カンマ区切りも可。<br>
       重複は自動除外されます。</span>
     </p>
 
