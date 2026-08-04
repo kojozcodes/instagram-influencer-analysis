@@ -15,7 +15,7 @@
   .acct-head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);}
   .av{width:42px;height:42px;border-radius:12px;background:var(--grad-btn);flex:0 0 auto;
       display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;}
-  .acct-id{flex:1;min-width:180px;}
+  .acct-id{flex:1 1 240px;min-width:240px;}
   .acct-id .u{font-family:var(--mono);font-size:15.5px;font-weight:700;}
   .acct-id .n{font-size:12.5px;color:var(--muted);}
   .acct-id a{color:var(--accent-2);text-decoration:none;}
@@ -26,6 +26,10 @@
   .subhead{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;
            color:var(--accent);letter-spacing:.04em;margin:20px 0 11px;}
   .subhead svg{width:15px;height:15px;stroke:var(--accent);}
+  .subhead.plain{gap:0;}
+  /* 修正依頼03 slide6: top posts move into the account header row */
+  .acct-posts{flex:1 1 340px;min-width:300px;margin-left:auto;}
+  .acct-posts .subhead{margin:0 0 8px;}
 
   .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;}
   .m{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:11px 13px;}
@@ -65,7 +69,7 @@
                font-size:12px;color:#7A5A08;line-height:1.75;}
   .age-generic svg{width:15px;height:15px;stroke:#B4700A;flex:0 0 auto;margin-top:4px;}
   .age-generic b{color:#5E4506;}
-  .note-ok{display:flex;align-items:center;gap:8px;margin:0 0 18px;font-size:14px;color:var(--ok);font-weight:700;}
+  .note-ok{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13.5px;color:var(--ok);font-weight:700;}
   .note-ok svg{width:18px;height:18px;stroke:var(--ok);flex:0 0 auto;}
 
   .posts{display:flex;flex-wrap:wrap;gap:8px;}
@@ -113,15 +117,7 @@
     <div class="stat err"><div class="num">{{ failed }}</div><div class="lbl">エラー</div></div>
   </div>
 
-  {% if failed == 0 %}
-  {# plain line, no box — per client feedback #}
-  <p class="note-ok">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" />
-    </svg>
-    すべてのアカウントの分析が完了しました。
-  </p>
-  {% else %}
+  {% if failed != 0 %}
   <div class="alert">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" />
@@ -138,7 +134,16 @@
       </svg>
       Excelでエクスポート
     </a>
-    <span style="font-size:12.5px;color:var(--muted);">全ての分析結果は下記に表示されています。</span>
+    {# 修正依頼03 slide5: completion message sits beside the export button;
+       「全ての分析結果は下記に表示されています。」 removed #}
+    {% if failed == 0 %}
+    <span class="note-ok">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /><path d="M9 12l2 2l4 -4" />
+      </svg>
+      すべてのアカウントの分析が完了しました。
+    </span>
+    {% endif %}
   </div>
 
   {% for r in rows %}
@@ -159,6 +164,19 @@
           </svg>成功
         </span>
         <div class="foll"><div class="v">{{ num(r.followers_count) }}</div><div class="k">フォロワー</div></div>
+        {# 修正依頼03 slide6: top posts shown in the header row #}
+        {% if r.metrics and r.metrics.top_posts %}
+        <div class="acct-posts">
+          <div class="subhead">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
+            </svg>反応が高い投稿（直近6ヶ月）
+          </div>
+          <div class="posts">
+            {% for p in r.metrics.top_posts %}<a href="{{ p }}" target="_blank" rel="noopener">投稿 {{ loop.index }}</a>{% endfor %}
+          </div>
+        </div>
+        {% endif %}
       {% else %}
         <span class="badge err">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -186,16 +204,15 @@
         <div class="m"><div class="k">平均リール再生数</div><div class="v">{{ num(m.avg_reels_views) }}</div></div>
       </div>
 
-      <div class="subhead">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M15 8h.01" /><path d="M4 15l4 -4a3 5 0 0 1 3 0l5 5" /><path d="M14 14l1 -1a3 5 0 0 1 3 0l2 2" />
-          <path d="M3 4m0 3a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v10a3 3 0 0 1 -3 3h-12a3 3 0 0 1 -3 -3z" />
-        </svg>フィード / リール別（直近12投稿）
-      </div>
+      {# 修正依頼03 slide4: split into two labelled groups, icon removed #}
+      <div class="subhead plain">フィード（直近12投稿）</div>
       <div class="mgrid">
         <div class="m"><div class="k">フィード平均いいね</div><div class="v">{{ num(m.feed_avg_likes) }}</div></div>
         <div class="m"><div class="k">フィード平均コメント</div><div class="v">{{ num(m.feed_avg_comments) }}</div></div>
         <div class="m"><div class="k">フィードER</div><div class="v">{{ val(m.feed_engagement_rate, '%') }}</div></div>
+      </div>
+      <div class="subhead plain">リール別（直近12投稿）</div>
+      <div class="mgrid">
         <div class="m"><div class="k">リール平均いいね</div><div class="v">{{ num(m.reel_avg_likes) }}</div></div>
         <div class="m"><div class="k">リール平均コメント</div><div class="v">{{ num(m.reel_avg_comments) }}</div></div>
         <div class="m"><div class="k">リールER</div><div class="v">{{ val(m.reel_engagement_rate, '%') }}</div></div>
@@ -264,16 +281,6 @@
         </div>
       {% endif %}
 
-      {% if m.top_posts %}
-      <div class="subhead">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873z" />
-        </svg>反応が高い投稿（直近6ヶ月）
-      </div>
-      <div class="posts">
-        {% for p in m.top_posts %}<a href="{{ p }}" target="_blank" rel="noopener">投稿 {{ loop.index }}</a>{% endfor %}
-      </div>
-      {% endif %}
 
       {% if r.profile_text %}
       <div class="subhead">
