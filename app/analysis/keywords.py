@@ -59,7 +59,11 @@ GENRES: list[tuple[str, float, dict[str, list[str]], str]] = [
               "pfcバランス", "ダイエット", "ボディメイク", "減量"],
         "w": ["痩せたい", "脚痩せ", "痩せ", "やせ", "食習慣", "体型"],
     }, "中年層型"),
-    ("育児・ワンオペ・プレママ", 0.90, {   # ours, not the proposed 0.95
+    ("育児・ワンオペ・プレママ", 0.85, {   # approved 2026-08-06: 0.90 -> 0.85.
+     # Every account on this genre over-estimated in the same direction;
+     # the five in the verification sets average 83.4% by エーストリーム.
+     # 85 chosen over 83 deliberately: 83 is the sample mean and would be
+     # fitting to the accounts under test.
         "s": ["プレママ", "新米ママ", "ワンオペママ", "育休", "保活"],
         "m": ["育児", "子育て", "マタニティ", "産後", "離乳食", "0歳ママ",
               "ママ", "mama", "maternity"],
