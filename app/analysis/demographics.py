@@ -63,6 +63,7 @@ from .keywords import (
     NAME_FEMALE_CHARS,
     NAME_MALE_CHARS,
     NEGATIVE_KEYWORDS,
+    GENRE_MASK_COMPOUNDS,
     NEUTRAL_COMPOUNDS,
     PERFORMER_MARKERS,
     SHOWCASE_CAPTION_THRESHOLD,
@@ -128,8 +129,17 @@ def _signed_score(text: str) -> float:
     return (f - m) / (f + m + SMOOTH)
 
 
+_NAME_SEPARATORS = re.compile(r"[｜|/／・\[\]【】(（]")
+
+
 def _name_char_score(display_name: str) -> float:
-    t = display_name or ""
+    """Only the name itself, not the description that follows it.
+
+    「中村 仁｜乳酸菌・腸内細菌・美肌菌・口腔内細菌の専門家」 — the 美 belongs to
+    美肌菌 in the tagline, not to his given name, but it was being read as a
+    feminine given-name character.
+    """
+    t = _NAME_SEPARATORS.split(display_name or "", 1)[0]
     f = sum(1 for c in NAME_FEMALE_CHARS if c in t)
     m = sum(1 for c in NAME_MALE_CHARS if c in t)
     if f == 0 and m == 0:
@@ -140,6 +150,8 @@ def _name_char_score(display_name: str) -> float:
 def _genre_scores(text: str) -> dict[str, float]:
     """Weighted score per genre: 3.0/2.0/1.0 by vocabulary strength."""
     t = (text or "").lower()
+    for w in GENRE_MASK_COMPOUNDS:      # 美肌菌 must not be read as 美肌
+        t = t.replace(w.lower(), "　")
     scores: dict[str, float] = {}
     for name, _ratio, kw, _pat in GENRES:
         s = 0.0

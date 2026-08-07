@@ -138,6 +138,18 @@ GENRES: list[tuple[str, float, dict[str, list[str]], str]] = [
               "投資信託", "ポン活", "ウエル活", "楽天経済圏"],
         "w": ["貯金", "お得"],
     }, "中年層型"),
+    # Approved 2026-08-06. An account whose audience is PROFESSIONALS rather
+    # than consumers has a different composition — 伴野佳正様 trains hairdressers
+    # (50.3% actual) but was read as a hair salon (80%). Vocabulary is kept
+    # deliberately narrow: bare 育成 / 講師 / スクール / 経営 all appear in nail and
+    # beauty accounts we already judge correctly, so only unambiguous
+    # business-to-professional phrasing is listed here.
+    ("専門家・育成・コンサル", 0.50, {
+        "s": ["育成の専門家", "人材育成", "育成実績", "コンサルタント",
+              "起業支援", "共同研究"],
+        "m": ["コンサル", "セミナー", "研修", "集客", "特許", "経営者"],
+        "w": ["学び場", "売れる", "月間売上"],
+    }, "趣味型"),
     ("投資・副業・ビジネス", 0.25, {
         "s": ["投資家", "起業家", "アフィリエイター"],
         "m": ["fx", "株式投資", "暗号資産", "仮想通貨", "不動産投資", "物販",
@@ -331,6 +343,20 @@ MALE_FIRST_MARKERS: list[str] = ["パパ", "ぱぱ", "新米パパ", "育児パ�
 # Compounds containing a gendered substring but referring to both/neither.
 NEUTRAL_COMPOUNDS: list[str] = [
     "夫婦", "夫妻", "男女", "父母", "両親", "子供", "子ども", "兄妹", "姉弟",
+    # 男飯 is a style of cooking, not a statement that the creator is male.
+    # もんきち様 (a married couple) was dragged 85% -> 47.5% by this one word.
+    "男飯",
+    # 美肌菌 means skin flora. Counting its 美肌 as a female word cancelled the
+    # 男 in 中村仁様's own 「乳酸菌に選ばれた男」, leaving a male researcher at
+    # 93% female. A stated gender must not be cancellable by an incidental word.
+    "美肌菌",
+]
+
+# Compounds that must not fire the GENRE keyword hidden inside them. Same class
+# of fault as 暮らし/暮らす, 夫婦/夫 and 「10代から70代」: Japanese has no word
+# boundaries, so substring matching finds words that were never written.
+GENRE_MASK_COMPOUNDS: list[str] = [
+    "美肌菌", "腸内細菌", "口腔内細菌", "常在菌", "乳酸菌",
 ]
 
 NAME_FEMALE_CHARS: list[str] = list("子美香奈愛莉咲花恵里菜桜麻沙彩優真結衣乃穂音姫和")
