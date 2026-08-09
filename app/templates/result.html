@@ -15,12 +15,14 @@
   .acct-head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--line);}
   .av{width:42px;height:42px;border-radius:12px;background:var(--grad-btn);flex:0 0 auto;
       display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;}
-  .acct-id{flex:1 1 240px;min-width:240px;}
+  .acct-id{flex:0 0 240px;min-width:0;overflow:hidden;}
   .acct-id .u{font-family:var(--mono);font-size:15.5px;font-weight:700;}
-  .acct-id .n{font-size:12.5px;color:var(--muted);}
+  .acct-id .n{font-size:12.5px;color:var(--muted);display:flex;gap:4px;align-items:baseline;white-space:nowrap;}
+  .acct-id .n .dn{overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .acct-id .n a{flex:0 0 auto;}
   .acct-id a{color:var(--accent-2);text-decoration:none;}
   .acct-id a:hover{text-decoration:underline;}
-  .foll{text-align:right;} .foll .v{font-size:21px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;}
+  .foll{flex:0 0 92px;text-align:right;} .foll .v{font-size:21px;font-weight:800;line-height:1.2;font-variant-numeric:tabular-nums;}
   .foll .k{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.05em;}
 
   .subhead{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;
@@ -28,7 +30,7 @@
   .subhead svg{width:15px;height:15px;stroke:var(--accent);}
   .subhead.plain{gap:0;}
   /* 修正依頼03 slide6: top posts move into the account header row */
-  .acct-posts{flex:1 1 340px;min-width:300px;margin-left:auto;}
+  .acct-posts{flex:1 1 auto;min-width:300px;}
   .acct-posts .subhead{margin:0 0 8px;}
 
   .mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:10px;}
@@ -79,7 +81,7 @@
   .bio{font-size:13px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);
        border-radius:12px;padding:12px 14px;white-space:pre-wrap;line-height:1.8;}
 
-  .badge{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;}
+  .badge{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;}
   .badge svg{width:13px;height:13px;}
   .badge.ok{background:var(--ok-bg);color:var(--ok);} .badge.ok svg{stroke:var(--ok);}
   .badge.err{background:var(--err-bg);color:var(--err);} .badge.err svg{stroke:var(--err);}
@@ -153,7 +155,7 @@
       <div class="acct-id">
         <div class="u">{{ r.username }}</div>
         <div class="n">
-          {% if r.display_name %}{{ r.display_name }} ・ {% endif %}
+          {% if r.display_name %}<span class="dn">{{ r.display_name }}</span><span>・</span>{% endif %}
           <a href="{{ r.account_url }}" target="_blank" rel="noopener">プロフィールを開く</a>
         </div>
       </div>
@@ -224,11 +226,10 @@
           <path d="M10 13a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M8 21v-1a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v1" />
           <path d="M15 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" /><path d="M5 5a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
         </svg>{% if d.source == 'measured' %}フォロワー属性（Instagram公式・実測値）{% else %}フォロワー属性（推定）{% endif %}
-        {% if d.source == 'measured' %}
-          <span class="tag meas">実測</span>
-        {% else %}
-          <span class="tag c-{{ {'高':'hi','中':'mid','低':'lo'}[d.confidence] }}">確度 {{ d.confidence }}</span>
-        {% endif %}
+        {# 修正依頼03(1): 確度 removed. It reported how much text was found, not
+           whether the answer was likely right, so it read 高 on the least
+           reliable estimates. #}
+        {% if d.source == 'measured' %}<span class="tag meas">実測</span>{% endif %}
       </div>
       {# 修正依頼02: per-account explanation line removed at client request #}
 
