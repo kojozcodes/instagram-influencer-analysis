@@ -45,6 +45,7 @@ Environment=PYTHONUNBUFFERED=1
 [Install]
 WantedBy=multi-user.target
 UNIT
+mkdir -p "$APP_DIR/data"                      # renewed tokens are saved here (/admin/token)
 sudo chown -R www-data:www-data "$APP_DIR"
 sudo systemctl daemon-reload
 sudo systemctl enable --now $SERVICE

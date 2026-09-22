@@ -12,6 +12,22 @@
     </div>
   </div>
 
+  {% if token_status and token_status.expired %}
+  <div class="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" />
+    </svg>
+    <div>アクセストークンの有効期限が切れています。分析を実行できません。<a href="/admin/token">トークン更新ページ</a>から更新してください。</div>
+  </div>
+  {% elif token_status and token_status.warn %}
+  <div class="alert warn">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" />
+    </svg>
+    <div>アクセストークンの有効期限が近づいています（{{ token_status.expires_date }}・残り{{ token_status.days_left }}日）。<a href="/admin/token">トークン更新ページ</a>から更新してください。</div>
+  </div>
+  {% endif %}
+
   {% if error %}
   <div class="alert">
     <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -63,7 +79,7 @@
         <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0" /><path d="M4 6v6a8 3 0 0 0 16 0v-6" />
         <path d="M4 12v6a8 3 0 0 0 16 0v-6" />
       </svg>
-      データソース：<b>{{ provider }}</b>{% if provider == "mock" %}（テスト用モックデータ）{% endif %}
+      データソース：<b>{{ provider }}</b>{% if provider == "mock" %}（テスト用モックデータ）{% endif %}{% if token_status and token_status.configured %}　トークン有効期限：<b>{{ token_status.expires_date or "確認中" }}</b>{% if token_status.days_left is not none and not token_status.expired %}（残り{{ token_status.days_left }}日）{% endif %}　<a href="/admin/token">更新</a>{% endif %}
     </p>
   </form>
 </div>

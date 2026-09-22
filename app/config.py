@@ -33,6 +33,12 @@ class Settings:
     graph_access_token: str = os.getenv("GRAPH_ACCESS_TOKEN", "")
     recent_posts_limit: int = int(os.getenv("RECENT_POSTS_LIMIT", "30"))
     max_analysis_targets: int = int(os.getenv("MAX_ANALYSIS_TARGETS", "1000"))
+    # token self-service (/admin/token): the app secret lets the server turn the
+    # pasted 1-hour Explorer token into a 60-day one; the password gates the page
+    graph_app_id: str = os.getenv("GRAPH_APP_ID", "")
+    graph_app_secret: str = os.getenv("GRAPH_APP_SECRET", "")
+    admin_password: str = os.getenv("ADMIN_PASSWORD", "")
+    token_store_path: str = os.getenv("TOKEN_STORE_PATH", "")
 
     @property
     def project_root(self) -> Path:

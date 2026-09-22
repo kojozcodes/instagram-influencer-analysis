@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}アクセストークン更新 - Instagramインフルエンサー分析システム{% endblock %}
+{% block head_extra %}
+<style>
+  .status{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:14.5px;margin:0 0 22px;}
+  .status dt{color:var(--muted);font-weight:700;}
+  .status dd{margin:0;}
+  .status .big{font-size:20px;font-weight:800;}
+  .status .expired{color:var(--err);}
+  .status .warn{color:#B25E00;}
+  ol.steps{padding-left:22px;margin:0 0 24px;line-height:2;}
+  ol.steps li{margin-bottom:6px;}
+  ol.steps code{font-family:var(--mono);font-size:13px;background:var(--surface-2);padding:1px 6px;border-radius:6px;}
+  .field{margin-top:18px;}
+  input[type=password]{width:100%;max-width:360px;padding:12px 14px;border:1.5px solid #E4E1F4;border-radius:12px;font-family:var(--font);font-size:15px;}
+  input[type=password]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(193,53,132,.10);}
+  textarea.tok{min-height:120px;font-family:var(--mono);font-size:13px;line-height:1.6;}
+  .back{display:inline-block;margin-top:22px;font-size:14px;color:var(--accent);}
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="sec-head">
+    <div class="sec-badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16.5 7.5a3 3 0 1 1 0 6a3 3 0 0 1 0 -6" /><path d="M14.5 13.5l-8 8h-3v-3l8 -8" />
+      </svg>
+    </div>
+    <div class="sec-title">
+      <h2>アクセストークン更新</h2>
+      <div class="rule"></div>
+    </div>
+  </div>
+
+  {% if success %}
+  <div class="alert ok">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12l5 5l10 -10" />
+    </svg>
+    <div>トークンを更新しました。有効期限は <b>{{ token_status.expires_date or "不明" }}</b> です。
+      {% if not persisted %}<br>※ このサーバーではトークンを保存できないため、再起動すると元に戻ります。開発者にもトークンをお知らせください。{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if error %}
+  <div class="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" /><path d="M12 8v4" /><path d="M12 16h.01" />
+    </svg>
+    <div>{{ error }}</div>
+  </div>
+  {% endif %}
+
+  <dl class="status">
+    <dt>現在の状態</dt>
+    <dd class="big {% if token_status.expired %}expired{% elif token_status.warn %}warn{% endif %}">
+      {% if not token_status.configured %}トークン未設定
+      {% elif token_status.expired %}期限切れ
+      {% elif token_status.days_left is none %}有効（期限は確認中）
+      {% else %}有効（残り {{ token_status.days_left }} 日）{% endif %}
+    </dd>
+    <dt>有効期限</dt><dd>{{ token_status.expires_date or "不明" }}</dd>
+    <dt>保存先</dt><dd>{% if token_status.persisted %}サーバーに保存済み（再起動しても保持）{% else %}メモリのみ{% endif %}</dd>
+  </dl>
+
+  <p style="margin:0 0 10px;font-weight:700;">更新手順（約3分。トークンは発行から1時間以内に貼り付けてください）</p>
+  <ol class="steps">
+    <li><a href="https://developers.facebook.com/tools/explorer/" target="_blank" rel="noopener">グラフAPIエクスプローラ</a>を開き、アプリを作成したFacebookアカウントでログインします。</li>
+    <li>右側の「Metaアプリ」で <code>beausanalysis</code>、「ユーザーまたはページ」で <code>ユーザートークン</code> を選びます。「アクセス許可」に次の4つがあることを確認します：<code>pages_show_list</code> <code>instagram_basic</code> <code>instagram_manage_insights</code> <code>pages_read_engagement</code></li>
+    <li>「Generate Access Token」を押し、ポップアップで「次へ」を押します。ページやInstagramアカウントを選ぶ画面が出た場合は、「allmine」とInstagramアカウントを選びます。</li>
+    <li>「アクセストークン」欄の文字列をコピーし、下の欄に貼り付けて「トークンを更新」を押します。</li>
+  </ol>
+
+  <form method="post" action="/admin/token">
+    <div class="field">
+      <label for="password">管理パスワード</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required>
+      {% if not password_configured %}<p class="hint"><span>※ サーバーに管理パスワードが設定されていないため、現在この画面からは更新できません。</span></p>{% endif %}
+    </div>
+    <div class="field">
+      <label for="token">手順4でコピーしたトークン</label>
+      <textarea id="token" name="token" class="tok" placeholder="EAA… で始まる文字列" required></textarea>
+    </div>
+    <div style="margin-top:22px;">
+      <button type="submit" class="btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+        </svg>
+        <span>トークンを更新</span>
+      </button>
+    </div>
+  </form>
+  <p style="margin:18px 0 0;font-size:13px;color:var(--muted);">更新後のトークンは60日間有効です。期限の2週間前からトップページにお知らせが出ます。</p>
+  <a class="back" href="/">← トップページへ戻る</a>
+</div>
+{% endblock %}

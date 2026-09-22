@@ -193,6 +193,24 @@ cache to Redis rather than adding workers.
 add a job queue so analyses run in the background, or request higher limits from
 Meta (requires App Review / Advanced Access).
 
+### 8. Token renewal without a redeploy — `/admin/token`
+
+The 60-day Meta token can be replaced from the browser:
+
+1. Set in `.env` (then `systemctl restart insta`):
+   `GRAPH_APP_ID`, `GRAPH_APP_SECRET` (Meta app dashboard → 設定 → ベーシック → app secret),
+   `ADMIN_PASSWORD` (any strong password; give it to the client).
+2. Make sure `data/` is writable by the service user (`vps_setup.sh` does this).
+3. The client opens `https://<domain>/admin/token`, follows the 4 on-page steps
+   (Graph API Explorer → Generate Access Token → copy), pastes the token with the
+   password. The server exchanges it for a 60-day token, verifies it against the
+   IG account, saves it to `data/token.json` and uses it immediately.
+
+The input screen shows the expiry date and warns from 14 days before; when the
+token has expired it says so and links to the page. The env var
+`GRAPH_ACCESS_TOKEN` is only the initial/fallback token: a saved `data/token.json`
+takes precedence on start-up.
+
 ### 7. Housekeeping
 
 Generated Excel files land in `generated/`. Add a cron job to purge old files:
