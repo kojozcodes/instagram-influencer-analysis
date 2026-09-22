@@ -201,10 +201,11 @@ The 60-day Meta token can be replaced from the browser:
    `GRAPH_APP_ID`, `GRAPH_APP_SECRET` (Meta app dashboard → 設定 → ベーシック → app secret),
    `ADMIN_PASSWORD` (any strong password; give it to the client).
 2. Make sure `data/` is writable by the service user (`vps_setup.sh` does this).
-3. The client opens `https://<domain>/admin/token`, follows the 4 on-page steps
-   (Graph API Explorer → Generate Access Token → copy), pastes the token with the
-   password. The server exchanges it for a 60-day token, verifies it against the
-   IG account, saves it to `data/token.json` and uses it immediately.
+3. The client opens `https://<domain>/admin/token`, logs in with the password
+   (login lasts 2 hours), follows the 4 on-page steps (Graph API Explorer →
+   Generate Access Token → copy) and pastes the token. The server exchanges it
+   for a 60-day token, verifies it against the IG account, saves it to
+   `data/token.json` and uses it immediately.
 
 The input screen shows the expiry date and warns from 14 days before; when the
 token has expired it says so and links to the page. The env var

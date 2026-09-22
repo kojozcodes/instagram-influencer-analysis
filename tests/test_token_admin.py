@@ -1,4 +1,4 @@
-"""Token store + /admin/token renewal page."""
+"""Token store + /admin/token renewal page (behind a login)."""
 import json
 import time
 
@@ -7,6 +7,8 @@ from fastapi.testclient import TestClient
 
 from app import token_admin, token_store
 from app.main import app
+
+TOK = "EAA" + "y" * 120
 
 
 @pytest.fixture
@@ -25,10 +27,15 @@ def client(store, monkeypatch):
     monkeypatch.setattr(token_admin, "_app_creds", lambda: ("123", "abc"))
     monkeypatch.setattr(token_admin, "_exchange_and_verify",
                         lambda short: ("EAA" + "L" * 120, int(time.time()) + 60 * 86400))
-    monkeypatch.setattr(token_admin, "_failures", 0)
-    monkeypatch.setattr(token_admin, "_blocked_until", 0.0)
+    monkeypatch.setattr(token_admin, "_attempts", {})
     return TestClient(app)
 
+
+def login(client, password="secret-pw"):
+    return client.post("/admin/login", data={"password": password}, follow_redirects=False)
+
+
+# ---- store -----------------------------------------------------------------
 
 def test_store_persists_and_reloads(store):
     exp = int(time.time()) + 59 * 86400
@@ -49,39 +56,82 @@ def test_status_flags_expiry(store):
     assert s["warn"] is True and s["expired"] is False
 
 
-def test_page_renders(client):
+# ---- login gate ------------------------------------------------------------
+
+def test_page_requires_login(client):
     r = client.get("/admin/token")
     assert r.status_code == 200
-    assert "トークンを更新" in r.text and "グラフAPIエクスプローラ" in r.text
+    assert "管理者ログイン" in r.text and "更新手順" not in r.text
 
 
 def test_wrong_password_rejected(client):
-    r = client.post("/admin/token", data={"password": "nope", "token": "EAA" + "y" * 100})
+    r = login(client, "nope")
     assert r.status_code == 403 and "パスワードが違います" in r.text
-    assert token_store.get_token() != "EAA" + "L" * 120
+    assert "admin_session" not in r.cookies
+    assert "更新手順" not in client.get("/admin/token").text
 
 
 def test_five_failures_block_for_a_minute(client):
     for _ in range(5):
-        client.post("/admin/token", data={"password": "nope", "token": "EAA" + "y" * 100})
-    r = client.post("/admin/token", data={"password": "secret-pw", "token": "EAA" + "y" * 100})
+        login(client, "nope")
+    r = login(client, "secret-pw")
     assert r.status_code == 429 and "1分" in r.text
+    # the lock is per IP: another address is not affected
+    other = client.post("/admin/login", data={"password": "secret-pw"},
+                        headers={"x-forwarded-for": "203.0.113.9"}, follow_redirects=False)
+    assert other.status_code == 303
 
 
 def test_no_password_configured_refuses(client, monkeypatch):
     monkeypatch.setattr(token_admin, "_admin_password", lambda: "")
-    r = client.post("/admin/token", data={"password": "", "token": "EAA" + "y" * 100})
+    r = login(client, "")
     assert r.status_code == 503 and "ADMIN_PASSWORD" in r.text
+    assert "ログインできません" in client.get("/admin/token").text
+
+
+def test_login_sets_cookie_and_shows_steps(client):
+    r = login(client)
+    assert r.status_code == 303 and r.headers["location"] == "/admin/token"
+    assert "admin_session" in r.cookies
+    page = client.get("/admin/token")
+    assert "更新手順" in page.text and "グラフAPIエクスプローラ" in page.text
+    assert "ログアウト" in page.text and 'name="password"' not in page.text
+
+
+def test_tampered_or_expired_cookie_rejected(client):
+    login(client)
+    exp, sig = client.cookies["admin_session"].split(".", 1)
+    client.cookies.set("admin_session", str(int(time.time()) - 5) + "." + sig, path="/admin")
+    assert "管理者ログイン" in client.get("/admin/token").text
+    client.cookies.set("admin_session", exp + "." + "0" * 64, path="/admin")
+    assert "管理者ログイン" in client.get("/admin/token").text
+
+
+def test_logout_clears_session(client):
+    login(client)
+    r = client.get("/admin/logout", follow_redirects=False)
+    assert r.status_code == 303
+    assert "管理者ログイン" in client.get("/admin/token").text
+
+
+# ---- token update ----------------------------------------------------------
+
+def test_token_post_without_login_refused(client):
+    r = client.post("/admin/token", data={"token": TOK})
+    assert r.status_code == 403 and "ログイン" in r.text
+    assert token_store.get_token() != "EAA" + "L" * 120
 
 
 def test_malformed_token_rejected(client):
-    r = client.post("/admin/token", data={"password": "secret-pw", "token": "hello"})
+    login(client)
+    r = client.post("/admin/token", data={"token": "hello"})
     assert r.status_code == 400 and "形式" in r.text
 
 
 def test_update_swaps_token_and_persists(client, store):
+    login(client)
     pasted = "EAA" + "y" * 60 + "\n" + "y" * 60      # line break as pasted from Slack/mail
-    r = client.post("/admin/token", data={"password": "secret-pw", "token": pasted})
+    r = client.post("/admin/token", data={"token": pasted})
     assert r.status_code == 200 and "トークンを更新しました" in r.text
     assert token_store.get_token() == "EAA" + "L" * 120
     assert store.exists()
@@ -90,12 +140,17 @@ def test_update_swaps_token_and_persists(client, store):
 
 
 def test_exchange_failure_message_is_japanese(client, monkeypatch):
+    login(client)
+
     def boom(short):
         raise token_admin.AdminError("トークンが無効か、期限切れ（発行から1時間）です。")
+
     monkeypatch.setattr(token_admin, "_exchange_and_verify", boom)
-    r = client.post("/admin/token", data={"password": "secret-pw", "token": "EAA" + "y" * 100})
+    r = client.post("/admin/token", data={"token": TOK})
     assert r.status_code == 400 and "期限切れ" in r.text
 
+
+# ---- provider / banner / cold start ----------------------------------------
 
 def test_provider_reads_store_at_call_time(store, monkeypatch):
     import httpx
@@ -141,7 +196,6 @@ def test_index_banner_follows_token_status(client, monkeypatch):
 def test_request_waits_for_inflight_expiry_check(tmp_path, monkeypatch):
     """Serverless cold start: the warm-up thread is mid-call when the first page
     request arrives. The request must wait for Meta's answer, not show 確認中."""
-    import threading
     import httpx
 
     monkeypatch.setattr(token_store, "_path", lambda: tmp_path / "token.json")

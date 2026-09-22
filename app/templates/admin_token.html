@@ -12,9 +12,7 @@
   ol.steps li{margin-bottom:6px;}
   ol.steps code{font-family:var(--mono);font-size:13px;background:var(--surface-2);padding:1px 6px;border-radius:6px;}
   .field{margin-top:18px;}
-  input[type=password]{width:100%;max-width:360px;padding:12px 14px;border:1.5px solid #E4E1F4;border-radius:12px;font-family:var(--font);font-size:15px;}
-  input[type=password]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(193,53,132,.10);}
-  textarea.tok{min-height:120px;font-family:var(--mono);font-size:13px;line-height:1.6;}
+    textarea.tok{min-height:120px;font-family:var(--mono);font-size:13px;line-height:1.6;}
   .back{display:inline-block;margin-top:22px;font-size:14px;color:var(--accent);}
 </style>
 {% endblock %}
@@ -74,11 +72,6 @@
 
   <form method="post" action="/admin/token">
     <div class="field">
-      <label for="password">管理パスワード</label>
-      <input type="password" id="password" name="password" autocomplete="current-password" required>
-      {% if not password_configured %}<p class="hint"><span>※ サーバーに管理パスワードが設定されていないため、現在この画面からは更新できません。</span></p>{% endif %}
-    </div>
-    <div class="field">
       <label for="token">手順4でコピーしたトークン</label>
       <textarea id="token" name="token" class="tok" placeholder="EAA… で始まる文字列" required></textarea>
     </div>
@@ -92,6 +85,6 @@
     </div>
   </form>
   <p style="margin:18px 0 0;font-size:13px;color:var(--muted);">更新後のトークンは60日間有効です。期限の2週間前からトップページにお知らせが出ます。</p>
-  <a class="back" href="/">← トップページへ戻る</a>
+  <a class="back" href="/">← トップページへ戻る</a>　<a class="back" href="/admin/logout">ログアウト</a>
 </div>
 {% endblock %}
