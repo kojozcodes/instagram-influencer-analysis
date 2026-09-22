@@ -136,3 +136,27 @@ def test_index_banner_follows_token_status(client, monkeypatch):
     monkeypatch.setattr(main_mod, "_token_status", lambda: soon)
     r = client.get("/")
     assert "有効期限が近づいています" in r.text and "残り9日" in r.text
+
+
+def test_request_waits_for_inflight_expiry_check(tmp_path, monkeypatch):
+    """Serverless cold start: the warm-up thread is mid-call when the first page
+    request arrives. The request must wait for Meta's answer, not show 確認中."""
+    import threading
+    import httpx
+
+    monkeypatch.setattr(token_store, "_path", lambda: tmp_path / "token.json")
+    token_store.reset_for_tests()
+    token_store.set_token("EAA" + "x" * 100, None)          # expiry unknown, like an env token
+    exp = int(time.time()) + 50 * 86400
+
+    def slow_get(url, params=None, timeout=None):
+        time.sleep(0.3)
+        return httpx.Response(200, json={"data": {"is_valid": True, "expires_at": exp}},
+                              request=httpx.Request("GET", url))
+
+    monkeypatch.setattr(httpx, "get", slow_get)
+    token_store.warm_up_in_background()
+    time.sleep(0.05)                                          # the thread is now inside the call
+    token_store.refresh_expiry()                              # request path: must block, then see the value
+    assert token_store.status()["expires_at"] == exp
+    token_store.reset_for_tests()

@@ -25,6 +25,7 @@ from .config import settings
 
 _JST = timezone(timedelta(hours=9))
 _lock = threading.Lock()
+_refresh_lock = threading.Lock()  # one Meta round-trip at a time
 _EXPIRY_RECHECK_SECONDS = 3600  # ask Meta for the expiry at most hourly
 _EXPIRY_RETRY_SECONDS = 300     # ...but retry sooner after a failed attempt
 
@@ -112,37 +113,39 @@ def refresh_expiry(force: bool = False) -> None:
     """Learn/confirm the expiry from Meta's debug_token (hourly at most).
 
     Needed for tokens that came from the environment, whose expiry we were never
-    told. Best-effort: any failure leaves the record unchanged."""
+    told. Serialized: while one caller (e.g. the start-up thread) is waiting on
+    Meta, a concurrent page request waits for that answer instead of showing
+    「確認中」. Best-effort: any failure leaves the record unchanged and is
+    retried after 5 minutes, a successful answer after an hour."""
     rec = _record()
     if not rec.access_token:
         return
-    if not force and time.time() - rec.checked_at < _EXPIRY_RECHECK_SECONDS:
-        return
-    # assume failure until Meta answers: a failed attempt is retried after 5 min,
-    # a successful one only after an hour
-    rec.checked_at = time.time() - _EXPIRY_RECHECK_SECONDS + _EXPIRY_RETRY_SECONDS
-    try:
-        import httpx
+    with _refresh_lock:
+        if not force and time.time() - rec.checked_at < _EXPIRY_RECHECK_SECONDS:
+            return
+        try:
+            import httpx
 
-        resp = httpx.get(
-            f"https://graph.facebook.com/{settings.graph_api_version}/debug_token",
-            params={"input_token": rec.access_token, "access_token": rec.access_token},
-            timeout=10.0,  # a cold call can take ~6 s
-        )
-        data = resp.json().get("data", {})
-    except Exception:  # network, timeout, bad JSON: keep what we have
-        return
-    if not data:
-        return
-    rec.checked_at = time.time()
-    if data.get("is_valid") is False:
-        rec.expires_at = int(time.time()) - 1  # mark expired so the UI can say so
-        return
-    exp = data.get("expires_at")
-    if isinstance(exp, int) and exp > 0:
-        rec.expires_at = exp
-        if rec.source == "file":
-            _persist(rec)
+            resp = httpx.get(
+                f"https://graph.facebook.com/{settings.graph_api_version}/debug_token",
+                params={"input_token": rec.access_token, "access_token": rec.access_token},
+                timeout=10.0,  # a cold call can take ~6 s
+            )
+            data = resp.json().get("data", {})
+        except Exception:  # network, timeout, bad JSON: keep what we have
+            data = {}
+        if not data:
+            rec.checked_at = time.time() - _EXPIRY_RECHECK_SECONDS + _EXPIRY_RETRY_SECONDS
+            return
+        rec.checked_at = time.time()
+        if data.get("is_valid") is False:
+            rec.expires_at = int(time.time()) - 1  # mark expired so the UI can say so
+            return
+        exp = data.get("expires_at")
+        if isinstance(exp, int) and exp > 0:
+            rec.expires_at = exp
+            if rec.source == "file":
+                _persist(rec)
 
 
 def warm_up_in_background() -> None:
