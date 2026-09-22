@@ -38,7 +38,16 @@ the first deploy).
 Open the deployment URL, enter `yoga_bijo`, run the analysis, and download the
 Excel. If analysis returns errors, re-check the environment variables.
 
-## Token refresh
+## Token refresh (self-service page)
+
+The app has a renewal page at `/admin/token`: the client pastes a fresh Graph API
+Explorer token and the server exchanges it for a 60-day token. For that, also set
+`GRAPH_APP_SECRET` and `ADMIN_PASSWORD` in the env vars. **On Vercel the renewed
+token is not persisted** (no writable disk) — it is used until the next cold start,
+so still update `GRAPH_ACCESS_TOKEN` here afterwards. The VPS keeps it in
+`data/token.json` and needs nothing else.
+
+## Token refresh (manual)
 The 60-day token can't be refreshed from Vercel. Run
 `python scripts/refresh_token.py ...` from any machine and paste the new
 `GRAPH_ACCESS_TOKEN` into the Vercel env vars, then redeploy.

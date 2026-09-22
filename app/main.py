@@ -14,20 +14,38 @@ from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from . import token_store
 from .config import settings
 from .excel import build_excel_bytes
 from .normalize import MAX_ACCOUNTS, normalize_input
 from .pipeline import analyze_accounts
+from .token_admin import router as token_router
 
 app = FastAPI(title="Instagram Influencer Analysis")
+app.include_router(token_router)
+
+
+@app.on_event("startup")
+def _warm_token_expiry() -> None:
+    if settings.provider == "graph":
+        token_store.warm_up_in_background()
 _templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+
+
+def _token_status() -> dict | None:
+    """Expiry info for the banner on the input screen (live provider only)."""
+    if settings.provider != "graph":
+        return None
+    token_store.refresh_expiry()  # hourly at most; best-effort
+    return token_store.status()
 
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return _templates.TemplateResponse(
         "index.html",
-        {"request": request, "max_accounts": MAX_ACCOUNTS, "provider": settings.provider},
+        {"request": request, "max_accounts": MAX_ACCOUNTS, "provider": settings.provider,
+         "token_status": _token_status()},
     )
 
 
@@ -42,6 +60,7 @@ def analyze(request: Request, accounts: str = Form("")):
                 "request": request,
                 "max_accounts": MAX_ACCOUNTS,
                 "provider": settings.provider,
+                "token_status": _token_status(),
                 "error": f"アカウントは最大{MAX_ACCOUNTS}件までです。件数を減らして再度お試しください。",
                 "previous": accounts,
             },
@@ -55,6 +74,7 @@ def analyze(request: Request, accounts: str = Form("")):
                 "request": request,
                 "max_accounts": MAX_ACCOUNTS,
                 "provider": settings.provider,
+                "token_status": _token_status(),
                 "error": "有効なアカウントが入力されていません。",
                 "rejected": norm.rejected,
                 "previous": accounts,
@@ -87,6 +107,7 @@ def analyze(request: Request, accounts: str = Form("")):
             # the results page also renders the input form (same screen)
             "max_accounts": MAX_ACCOUNTS,
             "provider": settings.provider,
+            "token_status": _token_status(),
             "previous": accounts,
         },
     )

@@ -95,6 +95,23 @@ python scripts/diagnose.py
 
 No other code changes. See `DEPLOY.md` for the Meta app + Sakura VPS setup.
 
+### Renewing the token from the browser (`/admin/token`)
+
+Meta tokens last 60 days. Instead of editing `.env` every time, the client can
+open `/admin/token`, follow the four on-page steps (Graph API Explorer →
+Generate Access Token → copy) and paste the token. The server exchanges it for a
+60-day token, verifies it and starts using it immediately; on a VPS it is saved
+to `data/token.json` and survives restarts. Needs in `.env`:
+
+```
+GRAPH_APP_ID=<Meta app id>
+GRAPH_APP_SECRET=<Meta app dashboard → 設定 → ベーシック>
+ADMIN_PASSWORD=<password for the page>
+```
+
+The input screen shows the expiry date, warns from 14 days before, and links to
+the page once the token has expired.
+
 ## Tests
 
 ```bash

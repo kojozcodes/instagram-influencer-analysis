@@ -7,7 +7,8 @@ PUBLIC Business/Creator accounts by username and read profile + recent media
 
 Requires (see .env):
   - IG_USER_ID:        our own connected IG Business account id
-  - GRAPH_ACCESS_TOKEN: long-lived token (instagram_basic + pages_show_list)
+  - GRAPH_ACCESS_TOKEN: long-lived token (instagram_basic + pages_show_list);
+    replaced at runtime via /admin/token (see token_store.py)
 
 This class is only imported when PROVIDER=graph, so the app runs without httpx
 credentials during development.
@@ -18,6 +19,7 @@ import json
 
 import httpx
 
+from .. import token_store
 from ..config import settings
 from ..models import AccountData, AccountError, Post
 
@@ -26,9 +28,10 @@ _GRAPH_BASE = "https://graph.facebook.com"
 
 class GraphAPIProvider:
     def __init__(self) -> None:
-        if not settings.ig_user_id or not settings.graph_access_token:
+        if not settings.ig_user_id or not token_store.get_token():
             raise RuntimeError(
-                "PROVIDER=graph requires IG_USER_ID and GRAPH_ACCESS_TOKEN in .env"
+                "PROVIDER=graph requires IG_USER_ID and a token (GRAPH_ACCESS_TOKEN in .env "
+                "or one saved from /admin/token)"
             )
         self._url = f"{_GRAPH_BASE}/{settings.graph_api_version}/{settings.ig_user_id}"
         # Highest percentage Meta reported via x-app-usage (0-100). The whole
@@ -71,7 +74,7 @@ class GraphAPIProvider:
                     "timeframe": "this_month",
                     "breakdown": "age,gender",
                     "metric_type": "total_value",
-                    "access_token": settings.graph_access_token,
+                    "access_token": token_store.get_token(),
                 },
                 timeout=30.0,
             )
@@ -99,7 +102,7 @@ class GraphAPIProvider:
             try:
                 resp = httpx.get(
                     self._url,
-                    params={"fields": "username", "access_token": settings.graph_access_token},
+                    params={"fields": "username", "access_token": token_store.get_token()},
                     timeout=30.0,
                 )
                 self._own_username_cache = resp.json().get("username", "") or ""
@@ -120,7 +123,7 @@ class GraphAPIProvider:
             "{username,name,followers_count,media_count,biography,website,"
             f"{self._media_fields()}}}"
         )
-        params = {"fields": fields, "access_token": settings.graph_access_token}
+        params = {"fields": fields, "access_token": token_store.get_token()}
 
         try:
             resp = httpx.get(self._url, params=params, timeout=30.0)
